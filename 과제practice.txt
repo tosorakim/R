@@ -1,0 +1,68 @@
+select <column> from (<source_query>)
+pivot
+(<aggr_function>(<aggr_column>
+for <spreading_column> in (spreading_elements>))
+
+
+select event, [install], [af_complete_registration], [af_level5_achieved], [af_purchase], [D1], [NRU], [level5], [purchase], [D1RR]
+
+from
+(
+select
+event, channel as [Month],
+Sales_amount
+from c_e)
+PIVOT
+(sum(Sales_amount) for [Month] IN ([install], [af_complete_registration], [af_level5_achieved], [af_purchase], [D1], [NRU], [level5], [purchase], [D1RR])
+)
+
+select event, channel as [channel] from c_e
+
+
+select event, count(channel)
+from c_e
+group by event;
+——————————————
+SELECT event, install, af_complete_registration, af_level5_achieved, af_purchase FROM
+(
+select event, count(channel) as count
+from c_e
+) AS src
+PIVOT(
+count(channel)
+FOR event IN (install, af_complete_registration, af_level5_achieved, af_purchase)
+) AS pvt
+
+
+
+CREATE TABLE gagong
+(
+       channel           VARCHAR(10),
+       install               VARCHAR(10),
+       af_complete_registration                   VARCHAR(30),
+       af_level5_achieved           VARCHAR(30),
+       af_level8_achieved               VARCHAR(30),
+       af_purchase           VARCHAR(30),
+       day1               VARCHAR(10),
+       nru           VARCHAR(10),
+       Lv5               VARCHAR(10),
+       purchase_rate           VARCHAR(10),
+       day1_retention           VARCHAR(10)       
+);
+
+
+
+
+LOAD DATA LOCAL INFILE '/home/parallels/gagong.csv'
+REPLACE
+INTO TABLE  orcl.gagong
+fields TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES     
+(channel,install,af_complete_registration,af_level5_achieved,af_level8_achieved,af_purchase,day1,nru,Lv5,purchase_rate,day1_retention);
+
+commit;
+
+
+channel,install,af_complete_registration,af_level5_achieved,af_level8_achieved,af_purchase,day1,nru,Lv5,purchase_rate,day1_retention

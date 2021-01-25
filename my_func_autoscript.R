@@ -55,3 +55,4 @@ my_func <- function() {
 }   
 
 my_func()
+par(family="AppleGothic")

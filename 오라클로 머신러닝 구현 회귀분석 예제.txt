@@ -1,0 +1,133 @@
+lightgbm, XGBoost , 
+만약 이 사람들에게 추천을 했다면 매출이 몇 % 더 증가했을것이다로 결론을 내야함
+
+https://dzone.com/articles/building-regression-model-using-oracle-data-mining
+
+1. 보스톤 하우징 데이터를 테이블로 구성한다. 
+
+CREATE TABLE BOSTON_HOUSING
+(
+   ID        NUMBER,
+   CRIM      NUMBER,
+   ZN        NUMBER,
+   INDUS     NUMBER,
+   CHAS      NUMBER,
+   NOX       NUMBER,
+   RM        NUMBER,
+   AGE       NUMBER,
+   DIS       NUMBER,
+   RAD       NUMBER,
+   TAX       NUMBER,
+   PTRATIO   NUMBER,
+   BLACK     NUMBER,
+   LSTAT     NUMBER,
+   MEDV      NUMBER
+);
+
+2. 머신러닝 구현
+
+CREATE TABLE SETTINGS_GLM
+AS
+SELECT *
+     FROM TABLE (DBMS_DATA_MINING.GET_DEFAULT_SETTINGS)
+    WHERE SETTING_NAME LIKE '%GLM%';
+
+
+
+BEGIN
+
+   INSERT INTO SETTINGS_GLM
+        VALUES (DBMS_DATA_MINING.ALGO_NAME, 'ALGO_GENERALIZED_LINEAR_MODEL');
+
+
+
+   INSERT INTO SETTINGS_GLM
+        VALUES (DBMS_DATA_MINING.PREP_AUTO, 'ON');
+
+
+
+   INSERT INTO SETTINGS_GLM
+        VALUES (
+                  DBMS_DATA_MINING.GLMS_RIDGE_REGRESSION,
+                  'GLMS_RIDGE_REG_DISABLE');
+
+
+
+   INSERT INTO SETTINGS_GLM
+        VALUES (
+                  DBMS_DATA_MINING.ODMS_MISSING_VALUE_TREATMENT,
+                  'ODMS_MISSING_VALUE_MEAN_MODE');
+
+
+
+   COMMIT;
+
+END;
+/
+
+3. 모델 생성
+
+CREATE OR REPLACE VIEW VW_BOSTON_HOUSING 
+AS SELECT * FROM BOSTON_HOUSING;
+
+
+
+BEGIN 
+
+   DBMS_DATA_MINING.CREATE_MODEL(
+      model_name            => 'MD_GLM_MODEL',
+      mining_function       =>  DBMS_DATA_MINING.REGRESSION,
+      data_table_name       => 'VW_BOSTON_HOUSING',
+      case_id_column_name   => 'ID',
+      target_column_name    =>  'MEDV',
+      settings_table_name   => 'SETTINGS_GLM');
+END;
+/
+
+4. 모델 확인 
+
+SELECT MODEL_NAME,
+       ALGORITHM,
+       COMMENTS,
+       CREATION_DATE,
+       MINING_FUNCTION,
+       MODEL_SIZE
+  FROM ALL_MINING_MODELS
+ WHERE MODEL_NAME = 'MD_GLM_MODEL';
+
+
+SELECT SETTING_NAME, SETTING_VALUE
+FROM ALL_MINING_MODEL_SETTINGS
+WHERE MODEL_NAME = 'MD_GLM_MODEL';
+
+
+
+SELECT * FROM 
+TABLE (DBMS_DATA_MINING.GET_MODEL_DETAILS_GLM ('MD_GLM_MODEL'));
+
+
+CREATE TABLE BOSTON_HOUSING_TEST
+(
+   ID        NUMBER,
+   CRIM      NUMBER,
+   ZN        NUMBER,
+   INDUS     NUMBER,
+   CHAS      NUMBER,
+   NOX       NUMBER,
+   RM        NUMBER,
+   AGE       NUMBER,
+   DIS       NUMBER,
+   RAD       NUMBER,
+   TAX       NUMBER,
+   PTRATIO   NUMBER,
+   BLACK     NUMBER,
+   LSTAT     NUMBER,
+   MEDV      NUMBER
+);
+
+
+SELECT * FROM BOSTON_HOUSING_TEST;
+
+SELECT T.*,
+ PREDICTION (MD_GLM_MODEL USING *) MODEL_PREDICT_RESPONSE
+FROM BOSTON_HOUSING_TEST T;

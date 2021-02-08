@@ -1,0 +1,58 @@
+getwd()
+
+normalize <- function(x) {
+  return ( (x-min(x)) / (max(x) - min(x) ) )
+}
+
+boston_train<- read.csv('train.csv', head=T)
+boston_test<-read.csv("test.csv", head=T)
+
+head(boston_train)
+head(boston_test)
+
+boston_train_norm <- as.data.frame(lapply(boston_train[,-1], normalize))
+boston_test_norm <- as.data.frame(lapply(boston_test[,-1],normalize) ) 
+
+summary(boston_train_norm)
+summary(boston_test_norm)
+
+
+#install.packages("neuralnet")
+library(neuralnet)
+
+boston_model <- neuralnet(formula=medv ~ crim + zn  + indus + chas + nox + rm + age + dis + rad + tax + ptratio + black + lstat ,
+                          data=boston_train_norm ,hidden = c(2,5) , learningrate =0.02) 
+
+
+model_results <-  compute(boston_model, boston_test_norm)
+
+
+predicted_medv <- model_results$net.result
+predicted_medv
+
+
+boston_test_norm2 <- data.frame(boston_test_norm, "MEDV"=predicted_medv)
+
+
+minvec <- sapply(boston_test,min)
+maxvec <- sapply(boston_test,max)
+
+denormalize <- function(x,minval,maxval) {
+  x*(maxval-minval) + minval
+}
+
+boston_test2 <- as.data.frame(Map(denormalize,boston_test_norm2, minvec,maxvec))
+
+
+result <- cbind(boston_test$ID, boston_test2$MEDV)
+result
+
+colnames(result) <- c('ID','MEDV')
+result
+
+result2<-data.table(result)
+
+result2
+
+
+write.csv(result2, file="boston_test9.csv",row.names = F)
